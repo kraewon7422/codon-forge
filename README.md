@@ -8,6 +8,10 @@ level uses the real rules, and most use **real human gene sequences checked agai
 
 One HTML file, no build step, no libraries. A Korean guide follows the English one below.
 
+New players get a 30-second taste first: be the ribosome for the first four codons of insulin. The home page is a
+3-D DNA helix you can spin; its six stretches are the six chapters. Every level shows where it sits in
+DNA → pre-mRNA → mRNA → protein, and which real gene it uses.
+
 ## Why I made it
 
 My earlier game, [Protein Origami](https://github.com/kraewon7422/protein-origami), is about how a chain of
@@ -30,9 +34,9 @@ Open `codon-forge.html` in any modern browser (desktop or phone). Progress is sa
 
 - **Stars:** ★ finish · ★ at most one mistake · ★ no hint (the hint in translation levels is the codon table).
 - **Protein codex:** each level unlocks a card for its protein (11 in total): role, a fact, the full sequence,
-  mass, and its H/P string.
+  and mass.
 - **Sandbox:** paste any DNA or FASTA. All six reading frames are translated and ORFs are drawn as bars.
-- **Time attack:** 60 seconds of "which tRNA reads this codon?", including wobble and inosine.
+- **Time attack:** 60 seconds of "which tRNA reads this codon?", including wobble and inosine. Every 5 in a row adds 2 seconds.
 - **Keys:** letters type bases · `1`–`9` pick an option or tRNA · `Space` translocates · `H` hint · `Esc` back.
 - Korean and English (`KO · EN` button).
 
@@ -70,18 +74,22 @@ not real (promoters, decoy introns, Kozak and uORF puzzles) are labelled "synthe
 
 ## Protein Origami link
 
-The codex and result cards can copy a protein as an H/P string: H if the Kyte–Doolittle hydropathy is above
-0 (I V L F C M A), P otherwise. That is the chain format Protein Origami folds.
+Result cards, the codex and the sandbox have a **Fold it** button that opens the chain in
+[Protein Origami](https://kraewon7422.github.io/protein-origami/protein-origami.html) through its `?seq=` link.
+Each residue becomes H if its Kyte–Doolittle hydropathy is above 0 (I V L F C M A) and P otherwise. Origami folds
+4–48 beads, so long proteins send a meaningful piece: the 9-residue oxytocin hormone, the 30-residue insulin
+B chain, or otherwise residues 1–40.
 
 ## Tests
 
-Open `codon-forge.html?test=1`. 33 tests run in the page, including:
+Open `codon-forge.html?test=1`. 39 tests run in the page, including:
 
 - genetic code (64 codons, 61 sense, codon counts per amino acid), wobble table, reverse complement
 - real sequences translate to their NCBI proteins; HBB intron 1 is found at exactly 130 nt with its branch point 37 nt from the 3′ end
 - each mutation is classified correctly (HbS missense, ΔF508 in-frame, IVS1-1 splice site, 185delAG frameshift with the stop at codon 39)
 - six-frame ORF finder, ribosome A→P→E state machine, stop codons reject tRNAs
 - every level has exactly one answer and is solvable, and the UI plays all 24 levels to 3 stars in both languages
+- every base and amino-acid label passes 4.5:1 contrast, the intro plays M-A-L-W, and every Origami link is a valid 4–48 bead chain
 
 ## Licence
 
@@ -99,6 +107,10 @@ MIT
 
 HTML 파일 하나로 돼 있고, 빌드나 라이브러리가 없어요.
 
+처음 열면 30초 맛보기로 인슐린의 첫 코돈 4개를 직접 번역해 봐요. 첫 화면은 돌려 볼 수 있는 3D DNA 나선이고,
+나선의 여섯 구간이 여섯 장이에요. 레벨마다 DNA → pre-mRNA → mRNA → 단백질 중 어디를 하고 있는지와 어떤
+실제 유전자인지 위에 보여 줘요.
+
 ## 만든 이유
 
 먼저 만든 [Protein Origami](https://github.com/kraewon7422/protein-origami)는 아미노산 사슬이 어떻게 접히는지를
@@ -111,9 +123,10 @@ HTML 파일 하나로 돼 있고, 빌드나 라이브러리가 없어요.
 
 - **6장 24레벨:** 중심 원리 → 전사 → RNA 가공 → 번역 → 개시의 함정 → 돌연변이 실험실
 - **별:** ★ 완성 · ★ 실수 1번 이하 · ★ 힌트 안 씀 (번역 레벨의 힌트는 코돈표)
-- **단백질 도감:** 레벨을 깨면 그 레벨의 실제 단백질 카드(11종)가 열려요. 역할, 재미있는 사실, 전체 서열, 질량, H/P 서열이 담겨 있어요.
+- **단백질 도감:** 레벨을 깨면 그 레벨의 실제 단백질 카드(11종)가 열려요. 역할, 재미있는 사실, 전체 서열, 질량이 담겨 있어요.
+- **Protein Origami에서 접기:** 결과 카드·도감·샌드박스의 버튼으로 만든 사슬을 [Protein Origami](https://kraewon7422.github.io/protein-origami/protein-origami.html)에서 바로 접어 봐요. 긴 단백질은 의미 있는 조각(옥시토신 9개, 인슐린 B 사슬 30개, 그 외 1–40번)을 보내요.
 - **샌드박스:** DNA나 FASTA를 붙여넣으면 6개 읽기틀을 모두 번역해 ORF를 막대로 보여줘요.
-- **타임 어택:** 60초 동안 "이 코돈을 읽는 tRNA는?" (워블·이노신 포함)
+- **타임 어택:** 60초 동안 "이 코돈을 읽는 tRNA는?" (워블·이노신 포함). 5개 연속 정답마다 +2초
 - **키:** 글자 = 염기 입력 · `1`–`9` 선택 · `Space` 전위 · `H` 힌트 · `Esc` 뒤로
 - 한국어 / 영어 (`KO · EN` 버튼)
 
@@ -126,7 +139,7 @@ HTML 파일 하나로 돼 있고, 빌드나 라이브러리가 없어요.
 
 ## 테스트
 
-`codon-forge.html?test=1`을 열면 33개 테스트가 페이지 안에서 돌아요. 24개 레벨을 두 언어로 모두 별 3개로
+`codon-forge.html?test=1`을 열면 39개 테스트가 페이지 안에서 돌아요. 24개 레벨을 두 언어로 모두 별 3개로
 깨는 UI 자동 플레이도 포함돼 있어요.
 
 ## 라이선스
