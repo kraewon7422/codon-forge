@@ -153,7 +153,17 @@
   .brief .goal { font-size: 18px; font-weight: 600; line-height: 1.4; }
   .brief .learn { margin-top: 6px; color: var(--ink2); font-size: 14px; line-height: 1.55; }
   .brief .src { margin-top: 8px; color: var(--faint); font-size: 12px; }
-  .brief .dots { display: flex; gap: 6px; margin-top: 10px; }
+  .brief .dots { display: flex; gap: 6px; }
+  .briefFoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .chip.sw { cursor: pointer; gap: 8px; transition: border-color .2s, background .2s; }
+  .chip.sw:hover { border-color: var(--line2); }
+  .chip.sw i { position: relative; width: 30px; height: 18px; border-radius: 9px; background: var(--paper3); box-shadow: inset 0 0 0 1px var(--line2); transition: background .2s; flex: none; }
+  .chip.sw i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(42,40,48,.3); transition: transform .2s var(--spring); }
+  .chip.sw.on { background: var(--accbg); border-color: rgba(52,80,143,.35); color: var(--acc); font-weight: 600; }
+  .chip.sw.on i { background: var(--acc); box-shadow: none; } .chip.sw.on i::after { transform: translateX(12px); }
+  .explain { margin-top: 12px; padding: 14px 16px 6px; border-radius: 14px; background: var(--accbg); border-left: 3px solid var(--acc); animation: rise .3s var(--ease); }
+  .explain b { display: block; font-size: 13px; color: var(--acc); margin-bottom: 6px; letter-spacing: .02em; }
+  .explain p { margin: 0 0 10px; font-size: 14.5px; line-height: 1.7; color: var(--ink); }
   .brief .dots i { width: 22px; height: 5px; border-radius: 3px; background: var(--paper3); transition: background .3s; }
   .brief .dots i.on { background: var(--ink); }
   .brief .dots i.done { background: var(--ok); }
@@ -735,8 +745,8 @@ function findORFs(dna, minAA = 30) {
 
 // ---- Stars, save ----
 const starsFor = (done, mistakes, hint) => done ? 1 + (mistakes <= 1 ? 1 : 0) + (hint ? 0 : 1) : 0;
-const SAVE_DEFAULT = () => ({v: 1, stars: {}, codex: [], lang: 'ko', best: 0, seen: [], mute: false});
-function serialize(st) { return JSON.stringify({v: 1, stars: st.stars, codex: st.codex, lang: st.lang, best: st.best, seen: st.seen, mute: !!st.mute}); }
+const SAVE_DEFAULT = () => ({v: 1, stars: {}, codex: [], lang: 'ko', best: 0, seen: [], mute: false, explain: false});
+function serialize(st) { return JSON.stringify({v: 1, stars: st.stars, codex: st.codex, lang: st.lang, best: st.best, seen: st.seen, mute: !!st.mute, explain: !!st.explain}); }
 function deserialize(str) {
   const d = SAVE_DEFAULT();
   try {
@@ -748,6 +758,7 @@ function deserialize(str) {
     if (o.lang === 'en' || o.lang === 'ko') d.lang = o.lang;
     if (Number.isFinite(o.best)) d.best = o.best;
     d.mute = o.mute === true;
+    d.explain = o.explain === true;
   } catch (e) { /* corrupt save → defaults */ }
   return d;
 }
@@ -1053,6 +1064,155 @@ const LEVELS = [
       q: L('편집 2번으로 원래 단백질을 되살리세요. (삽입 가능)', 'Restore the original protein in 2 edits. (You may insert.)'),
       hint: L('단백질이 처음 어긋나는 코돈 근처에 A와 G를 넣어 보세요.', 'Insert an A and a G near the first codon where the protein goes wrong.')}]},
 ];
+// ---- Concept notes (the "개념 설명" toggle): what the thing you look for in each level is, and why a cell cares.
+// They explain the idea, never the level's answer (a test checks they never contain a correct option).
+const EXPLAIN = {
+  '1-1': L(['DNA는 뉴클레오타이드가 길게 이어진 사슬 두 개가 서로 감겨 이중 나선을 이룬 분자예요. 뉴클레오타이드는 당(디옥시리보스), 인산, 염기로 되어 있고, 염기에는 A(아데닌), T(티민), G(구아닌), C(사이토신) 네 가지가 있어요.',
+      '두 사슬은 안쪽을 향한 염기끼리 수소 결합으로 붙어 있어요. A는 T와 수소 결합 2개로, G는 C와 수소 결합 3개로 짝을 지어요. 이것을 상보적 염기쌍이라고 해요.',
+      '그래서 한 가닥의 서열만 알면 다른 가닥의 서열이 하나로 정해져요. 세포가 DNA를 복제할 때 각 가닥을 틀로 새 가닥을 만들고, 한쪽이 손상됐을 때 반대쪽을 보고 고칠 수 있는 것도 이 규칙 덕분이에요.'],
+     ['DNA is two long chains of nucleotides wound around each other into a double helix. A nucleotide is a sugar (deoxyribose), a phosphate and a base, and there are four bases: A (adenine), T (thymine), G (guanine) and C (cytosine).',
+      'The two chains are held together by hydrogen bonds between bases that face each other. A pairs with T through two hydrogen bonds, and G pairs with C through three. These are complementary base pairs.',
+      'So the sequence of one strand fixes the sequence of the other. That is how a cell copies DNA (each strand is a template for a new one) and how it repairs a damaged strand by reading its partner.']),
+  '1-2': L(['뉴클레오타이드의 당에는 탄소에 1\'부터 5\'까지 번호가 붙어 있어요. 사슬은 한 뉴클레오타이드의 3\' 탄소와 다음 뉴클레오타이드의 5\' 탄소에 붙은 인산이 결합하며 이어져요. 그래서 사슬의 한쪽 끝은 인산이 남은 5\' 끝, 다른 쪽 끝은 OH가 남은 3\' 끝이 되어 방향이 생겨요.',
+      'DNA를 만드는 효소(DNA 중합효소)와 RNA를 만드는 효소(RNA 중합효소)는 모두 사슬의 3\' 끝에만 새 뉴클레오타이드를 붙일 수 있어요. 즉 핵산은 언제나 5\'→3\' 방향으로 자라요. 서열을 왼쪽에서 오른쪽으로 5\'→3\' 순서로 적는 관례도 여기서 나왔어요.',
+      '이중 나선의 두 가닥은 서로 반대 방향으로 놓여 있어요(역평행). 그래서 짝 가닥을 관례대로 5\'→3\'로 적으면, 위 가닥과 비교했을 때 순서가 뒤집혀 있어요. 이렇게 적은 서열을 역상보 서열이라고 해요.'],
+     ['The carbons of a nucleotide\'s sugar are numbered 1\' to 5\'. A chain grows by joining the 3\' carbon of one nucleotide to the phosphate on the 5\' carbon of the next. So one end of a chain has a free phosphate (the 5\' end) and the other a free OH (the 3\' end): the chain has a direction.',
+      'The enzymes that make DNA (DNA polymerase) and RNA (RNA polymerase) can only add nucleotides to the 3\' end. Nucleic acids always grow 5\'→3\', and that is why sequences are written 5\'→3\' from left to right.',
+      'The two strands of a double helix run in opposite directions (antiparallel). So when the partner strand is written the usual way, 5\'→3\', its order is reversed compared with the top strand. A sequence written like this is called the reverse complement.']),
+  '1-3': L(['전사는 DNA에 저장된 유전 정보를 RNA로 옮겨 적는 과정이에요. RNA 중합효소가 DNA 이중 나선을 잠깐 풀고, 한 가닥(주형 가닥)을 읽으면서 그와 상보적인 RNA 사슬을 만들어요.',
+      'RNA는 DNA와 비슷하지만 두 가지가 달라요. 당이 디옥시리보스 대신 리보스이고, 염기 T(티민) 대신 U(우라실)를 써요. U는 T처럼 A와 짝을 짓기 때문에, 주형 가닥의 A 맞은편에는 RNA의 U가 들어가요.',
+      '중합효소는 주형 가닥을 3\'→5\' 방향으로 따라가면서 RNA를 5\'→3\' 방향으로 늘려요. 이렇게 만들어진 RNA 중 단백질 정보를 담은 것이 mRNA(전령 RNA)예요.'],
+     ['Transcription copies the information stored in DNA into RNA. RNA polymerase opens the double helix for a moment, reads one strand (the template strand) and builds an RNA chain complementary to it.',
+      'RNA is like DNA with two differences: its sugar is ribose instead of deoxyribose, and it uses U (uracil) instead of T (thymine). U pairs with A just as T does, so a U goes into the RNA wherever the template has an A.',
+      'The polymerase moves along the template 3\'→5\' while the RNA grows 5\'→3\'. RNA that carries the information for a protein is called mRNA (messenger RNA).']),
+  '1-4': L(['원핵생물은 세균과 고세균처럼 핵막이 없는 세포예요. DNA가 세포질에 그대로 놓여 있어서, 유전자를 RNA로 옮기는 일(전사)과 RNA로 단백질을 만드는 일(번역)이 같은 공간에서 일어나요.',
+      '진핵생물은 사람, 식물, 균류처럼 DNA를 핵막으로 둘러싼 핵 속에 두는 세포예요. 전사는 핵 안에서, 번역은 핵 밖 세포질에서 일어나요. RNA가 핵에서 세포질로 옮겨 가야 하므로 두 과정 사이에 시간과 단계가 생겨요.',
+      '한편 모든 생물이 공통 조상에게서 물려받아 함께 쓰는 아주 오래된 기본 장치도 있어요. 카드마다 "핵이 있어야만 가능한 일인지, 핵이 없어서 생기는 일인지, 모든 세포에 필요한 일인지"를 따져 보세요.'],
+     ['Prokaryotes, bacteria and archaea, are cells without a nuclear membrane. Their DNA lies in the cytoplasm, so copying a gene into RNA (transcription) and making protein from the RNA (translation) happen in the same space.',
+      'Eukaryotes, such as humans, plants and fungi, keep their DNA inside a nucleus wrapped in a membrane. Transcription happens in the nucleus and translation in the cytoplasm outside it. The RNA has to travel from one to the other, which leaves time and room for extra steps in between.',
+      'Some basic machinery is very old and shared by all life, inherited from a common ancestor. For each card, ask: does it need a nucleus, does it happen because there is no nucleus, or does every cell need it?']),
+  '2-1': L(['유전자가 있는 구간에서 DNA 두 가닥은 역할이 달라요. RNA 중합효소가 실제로 읽는 가닥을 주형 가닥(안티센스 가닥), 읽히지 않는 다른 가닥을 암호화 가닥(센스 가닥)이라고 해요.',
+      'mRNA는 주형 가닥과 상보적으로 만들어지기 때문에, 결과적으로 암호화 가닥과 같은 서열이 돼요(T만 U로 바뀌어요). 유전자 서열을 책이나 데이터베이스에 적을 때 보통 암호화 가닥을 5\'→3\'로 적는 이유예요.',
+      '거꾸로 말하면, 만들어질 mRNA의 서열을 알면 어느 가닥이 주형이었는지 판단할 수 있어요. 각 가닥을 RNA로 옮겼을 때 원하는 mRNA가 나오는지 생각해 보세요.'],
+     ['In a gene, the two DNA strands have different jobs. The strand RNA polymerase actually reads is the template (antisense) strand; the other, unread strand is the coding (sense) strand.',
+      'Because the mRNA is built complementary to the template, it ends up with the same sequence as the coding strand (with U for T). That is why gene sequences in books and databases are usually given as the coding strand, 5\'→3\'.',
+      'Turned around: if you know the mRNA to be made, you can tell which strand was the template. Think about which strand would give the target mRNA when copied into RNA.']),
+  '2-2': L(['유전자 앞에는 RNA 중합효소가 어디서 전사를 시작할지 알려 주는 DNA 구간이 있는데, 이것을 프로모터라고 해요. 프로모터 자체는 RNA로 옮겨지지 않고, 단백질들이 붙는 자리 역할만 해요.',
+      '많은 진핵생물 유전자의 프로모터에는 TATA 박스라는 짧은 서열이 있어요. 공통 서열은 TATAAA이고, A와 T가 많은 것이 특징이에요. 일반 전사 인자 TFIID에 들어 있는 TBP(TATA 결합 단백질)가 이 서열을 알아보고 결합하면서 DNA를 크게 구부려요.',
+      '그러면 다른 일반 전사 인자들과 RNA 중합효소 II가 차례로 모여 전사 개시 복합체가 만들어져요. A–T 쌍은 수소 결합이 2개뿐이라 G–C 쌍보다 쉽게 떨어지는데, 이것도 두 가닥이 벌어져야 하는 시작 부위 근처에 유리해요.'],
+     ['In front of a gene is a stretch of DNA that tells RNA polymerase where to start transcribing: the promoter. The promoter itself is not copied into RNA; it is a landing site for proteins.',
+      'Many eukaryotic promoters contain a short sequence called the TATA box, consensus TATAAA, rich in A and T. TBP (TATA-binding protein), part of the general transcription factor TFIID, recognises it, binds and bends the DNA sharply.',
+      'Other general transcription factors and RNA polymerase II then gather to form the transcription initiation complex. A–T pairs have only two hydrogen bonds and come apart more easily than G–C pairs, which also helps near a start site, where the strands must open.']),
+  '2-3': L(['전사 시작점은 RNA의 첫 번째 염기가 되는 DNA 위치로, +1이라고 불러요. 그보다 위쪽(5\' 쪽, 상류)은 −1, −2, −3…, 아래쪽(3\' 쪽, 하류)은 +2, +3…으로 번호를 매겨요. 0번은 없어요.',
+      'TATA 박스에 모인 전사 개시 복합체는 일정한 거리만큼 아래에서 RNA를 만들기 시작해요. 그래서 사람 유전자에서 TATA 박스는 보통 −25~−30 근처에 있어요.',
+      '시작점 자체를 둘러싼 또 다른 공통 서열도 있는데, 이를 개시자(Inr)라고 해요. 사람에서는 YYANWYY 모양이고(Y = C 또는 T, W = A 또는 T, N = 아무 염기), 가운데 A가 +1이 되는 경우가 많아요. 거리와 Inr 모양을 함께 확인하면 시작점을 찾을 수 있어요.'],
+     ['The transcription start site is the DNA position that becomes the first base of the RNA, called +1. Positions upstream (toward 5\') are numbered −1, −2, −3…, and downstream (toward 3\') +2, +3…. There is no 0.',
+      'The initiation complex that gathers on the TATA box starts making RNA a fixed distance downstream, so in human genes the TATA box usually sits around −25 to −30.',
+      'Another consensus sequence surrounds the start site itself: the initiator (Inr). In humans it looks like YYANWYY (Y = C or T, W = A or T, N = any base), and its central A is often +1. Check the distance and the Inr shape together to find the start.']),
+  '2-4': L(['DNA는 두 가닥 모두 주형이 될 수 있어요. 그래서 한 염색체 안에서도 어떤 유전자는 한쪽 가닥을, 이웃한 유전자는 반대쪽 가닥을 주형으로 써서 서로 반대 방향으로 전사될 수 있어요.',
+      'RNA 중합효소는 언제나 주형을 3\'→5\'로 읽고 RNA를 5\'→3\'로 만들어요. 화면에 위 가닥을 왼쪽→오른쪽(5\'→3\')으로 그려 두었다면, 아래 가닥에 있는 유전자는 화면에서 오른쪽→왼쪽으로 진행하는 것처럼 보여요.',
+      '유전자의 방향을 정해 주는 것은 프로모터예요. TATA 박스 같은 프로모터 서열은 암호화 가닥 위에서 5\'→3\'로 읽었을 때 TATAAA 모양으로 나타나요. 두 가닥을 각각 5\'→3\' 방향으로 읽어 보며 이 서열이 어디에 나타나는지 찾아보세요.'],
+     ['Either DNA strand can serve as a template. So on one chromosome, one gene may use one strand and its neighbour the other, and they are transcribed in opposite directions.',
+      'RNA polymerase always reads its template 3\'→5\' and makes RNA 5\'→3\'. If the top strand is drawn left→right (5\'→3\'), a gene on the bottom strand appears to run right→left on screen.',
+      'The promoter sets a gene\'s direction. A promoter sequence such as the TATA box reads TATAAA when read 5\'→3\' along the coding strand. Read each strand 5\'→3\' and see where that sequence appears.']),
+  '3-1': L(['진핵생물의 유전자는 대부분 조각나 있어요. 단백질 정보가 담긴 엑손 사이사이에 인트론이라는 구간이 끼어 있고, 전사되면 인트론까지 포함된 긴 RNA(pre-mRNA)가 먼저 만들어져요.',
+      '핵 안에서 스플라이시오솜이라는 큰 RNA·단백질 복합체가 인트론을 잘라내고 엑손끼리 이어 붙여요. 이 과정을 스플라이싱이라고 해요. 스플라이시오솜은 인트론 양 끝의 짧은 신호를 알아보는데, 인트론은 거의 언제나 5\' 끝이 GU로 시작하고 3\' 끝이 AG로 끝나요.',
+      '인트론 안쪽, 3\' 끝에서 조금 위에는 가지점이라는 특별한 A가 있어요. 이 A의 2\'-OH가 인트론의 5\' 끝을 공격해 고리를 만들고, 이어서 5\' 쪽 엑손이 3\' 쪽 엑손과 연결돼요. 잘려 나온 인트론은 올가미(lariat) 모양이 되어 분해돼요.'],
+     ['Most eukaryotic genes come in pieces. Stretches called introns sit between the exons, which carry the protein information, and transcription first makes a long RNA that still contains the introns (pre-mRNA).',
+      'In the nucleus, a large RNA–protein machine called the spliceosome cuts the introns out and joins the exons. This is splicing. The spliceosome recognises short signals at both ends of an intron: introns almost always begin with GU at the 5\' end and end with AG at the 3\' end.',
+      'Inside the intron, a little upstream of its 3\' end, is a special A called the branch point. Its 2\'-OH attacks the 5\' end of the intron to form a loop, and then the 5\' exon is joined to the 3\' exon. The removed intron is a lariat (lasso) and is broken down.']),
+  '3-2': L(['GU와 AG는 두 글자짜리 서열이라 아무 RNA에서나 자주 나와요. 이것만으로 경계를 정한다면 엉뚱한 곳이 잘려 단백질이 망가질 거예요. 그래서 스플라이시오솜은 두 글자 주변의 서열까지 함께 확인해요.',
+      '5\' 스플라이스 자리는 공통 서열 AG|GURAGU를 닮아야 해요(|가 잘리는 곳, R = A 또는 G). 이 서열은 스플라이시오솜의 U1 snRNA와 염기쌍을 이루기 때문에, 많이 닮을수록 잘 인식돼요.',
+      '3\' 스플라이스 자리는 AG 바로 앞에 피리미딘(C, U)이 연달아 많은 구간, 즉 폴리피리미딘 띠가 있어야 해요. 그리고 그보다 위쪽(대략 18–40 nt)에 가지점 A가 있어야 해요. 사람의 가지점 주변은 yUnAy 모양을 띠어요(y = C/U, n = 아무 염기). 이 조건을 갖추지 못한 GU나 AG는 미끼일 뿐 잘리지 않아요.'],
+     ['GU and AG are only two letters long, so they turn up all over any RNA. If those alone set the boundaries, the wrong places would be cut and the protein ruined. So the spliceosome checks the sequence around them too.',
+      'A 5\' splice site should resemble the consensus AG|GURAGU (| is the cut, R = A or G). This sequence base-pairs with the spliceosome\'s U1 snRNA, so the closer the match, the better it is recognised.',
+      'A 3\' splice site needs a run rich in pyrimidines (C, U) just before the AG, the polypyrimidine tract, and a branch-point A further upstream (roughly 18–40 nt). In humans the branch point sits in a yUnAy shape (y = C/U, n = any base). A GU or AG without these is only a decoy and is not cut.']),
+  '3-3': L(['β-글로빈은 적혈구에서 산소를 나르는 헤모글로빈의 사슬 중 하나예요. 이 유전자(HBB)는 엑손 3개와 인트론 2개로 되어 있고, 이 레벨에 나오는 인트론 1은 130 nt 길이예요.',
+      '실제 인트론 안쪽에는 GU와 AG가 여러 번 나와요. 그래서 앞 레벨에서 익힌 조건을 모두 함께 확인해야 진짜 경계를 찾을 수 있어요. 5\' 공통 서열과 얼마나 닮았는지, AG 앞에 폴리피리미딘 띠가 있는지, 그 위쪽에 가지점이 있는지를 보면 돼요.',
+      '스플라이싱은 염기 하나 단위로 정확해야 해요. 경계가 한 칸만 어긋나도 그 뒤의 코돈 읽기틀이 밀려 전혀 다른 아미노산이 이어지기 때문이에요. 6장에서는 바로 이 인트론의 신호 하나가 망가진 환자를 만나게 돼요.'],
+     ['β-globin is one of the chains of haemoglobin, which carries oxygen in red blood cells. Its gene, HBB, has three exons and two introns; intron 1, used in this level, is 130 nt long.',
+      'A real intron contains GU and AG many times over, so you have to apply every rule from the last level together to find the real boundaries: how close the 5\' site is to the consensus, whether there is a polypyrimidine tract before the AG, and whether a branch point sits upstream of it.',
+      'Splicing must be exact to the base. If a boundary is off by one, the reading frame after it shifts and completely different amino acids follow. In chapter 6 you meet a patient in whom one signal of this very intron is broken.']),
+  '3-4': L(['pre-mRNA는 인트론이 잘리는 것 말고도 양 끝이 가공돼요. 5\' 끝에는 전사가 시작되자마자 구아닌을 바탕으로 한 변형 뉴클레오타이드가 특별한 방식으로 붙어 5\' 캡을 이뤄요. 캡은 RNA의 5\' 끝을 분해 효소로부터 막고, 나중에 리보솜이 mRNA를 찾아 번역을 시작하는 출발점이 돼요.',
+      '3\' 끝은 폴리 A 신호에서 정해져요. RNA에 AAUAAA라는 신호가 나타나면, 이를 알아보는 단백질 복합체가 그보다 조금 아래(보통 10–30 nt, 흔히 CA 바로 뒤)를 잘라요.',
+      '잘린 3\' 끝에는 폴리 A 중합효소가 주형 없이 A를 수백 개까지 이어 붙여 폴리 A 꼬리를 만들어요. 꼬리는 mRNA가 너무 빨리 분해되지 않게 하고, 핵 밖으로의 수송과 번역을 도와요. 꼬리가 짧아질수록 mRNA는 분해에 가까워져요.'],
+     ['Besides losing its introns, pre-mRNA is processed at both ends. Right after transcription starts, a modified nucleotide based on guanine is attached to the 5\' end in a special way, forming the 5\' cap. The cap protects the 5\' end from degrading enzymes and is later where the ribosome finds the mRNA to start translation.',
+      'The 3\' end is set by the poly-A signal. When AAUAAA appears in the RNA, a protein complex that recognises it cuts the RNA a little downstream (usually 10–30 nt, often just after a CA).',
+      'Poly-A polymerase then adds up to a few hundred A\'s to the cut end without any template, making the poly-A tail. The tail keeps the mRNA from being destroyed too fast and helps its export and translation; as the tail shortens, the mRNA moves toward breakdown.']),
+  '4-1': L(['번역은 mRNA의 염기 서열을 단백질의 아미노산 서열로 바꾸는 과정이에요. mRNA는 염기 3개씩 묶어서 읽는데, 이 세 염기를 코돈이라 하고 코돈 하나가 아미노산 하나(또는 정지)를 뜻해요.',
+      '각 아미노산은 tRNA라는 작은 RNA에 실려 와요. tRNA 한쪽 끝에는 아미노산이 붙어 있고, 반대쪽에는 코돈과 짝을 짓는 세 염기인 안티코돈이 있어요. 안티코돈과 코돈은 역평행으로, 즉 안티코돈 3\'→5\'가 코돈 5\'→3\'과 마주 보며 짝을 지어요.',
+      '리보솜에는 tRNA가 들어가는 자리가 세 개 있어요. A 자리에는 새 tRNA가 들어오고, P 자리에는 자라는 사슬을 단 tRNA가 있고, E 자리로는 빈 tRNA가 나가요. 첫 tRNA(개시 tRNA, Met)만은 처음부터 P 자리의 AUG에 놓여요. 펩타이드 결합이 생긴 뒤 리보솜이 코돈 하나만큼 이동하는 것을 전위라고 해요.'],
+     ['Translation turns the base sequence of an mRNA into the amino-acid sequence of a protein. The mRNA is read three bases at a time; each triplet is a codon, and each codon means one amino acid (or stop).',
+      'Each amino acid arrives on a small RNA called tRNA. One end of a tRNA carries the amino acid; the other has three bases, the anticodon, that pair with the codon. They pair antiparallel: the anticodon read 3\'→5\' faces the codon read 5\'→3\'.',
+      'The ribosome has three tRNA sites. A new tRNA comes into the A site, the tRNA holding the growing chain sits in the P site, and empty tRNAs leave from the E site. Only the first tRNA (the initiator, Met) starts directly in the P site on the AUG. After a peptide bond forms, the ribosome moves one codon along: translocation.']),
+  '4-2': L(['코돈은 61가지가 아미노산을 뜻하지만, 세포에 있는 tRNA 종류는 그보다 훨씬 적어요. 그런데도 모든 코돈이 읽히는 것은 워블(흔들림) 때문이에요.',
+      '코돈의 첫째·둘째 염기는 안티코돈과 엄격하게 A–U, G–C로 짝을 지어야 해요. 하지만 코돈의 셋째 염기와 짝을 짓는 안티코돈의 5\' 끝 염기는 공간적으로 조금 느슨해서, 표준이 아닌 짝도 허용돼요.',
+      '대표적인 것이 G·U 짝이에요. 안티코돈 5\' 끝이 G이면 코돈 셋째 자리의 C뿐 아니라 U와도 짝을 지을 수 있고, 안티코돈 5\' 끝이 U이면 A와 G를 모두 읽을 수 있어요. 이 게임에서는 안티코돈을 3\'→5\'로 적기 때문에, 워블 자리는 표시된 안티코돈의 오른쪽 끝이에요.'],
+     ['61 codons stand for amino acids, but cells have far fewer kinds of tRNA. Every codon still gets read, thanks to wobble.',
+      'The first and second bases of a codon must pair strictly, A–U and G–C. But the base at the 5\' end of the anticodon, which pairs with the codon\'s third base, sits a little more loosely, so some non-standard pairs are allowed.',
+      'The classic one is G·U: an anticodon starting with G at its 5\' end can pair with U as well as C in the codon\'s third position, and one starting with U can read both A and G. This game writes anticodons 3\'→5\', so the wobble position is the right-hand end of the anticodon shown.']),
+  '4-3': L(['일부 tRNA는 안티코돈 5\' 끝(워블 자리)의 A를 효소가 이노신(I)으로 바꿔 놓아요. 이노신은 A에서 아미노기가 빠진 변형 염기로, DNA나 mRNA에는 없고 tRNA에서만 볼 수 있어요.',
+      '이노신은 U, C, A 세 가지와 모두 짝을 지을 수 있어요. 그래서 이노신을 가진 tRNA 하나가 코돈 셋째 자리가 U·C·A인 코돈 세 종류를 한꺼번에 읽어요.',
+      '셋째 자리만 다르고 같은 아미노산을 뜻하는 코돈이 많기 때문에(예: 4가지 코돈이 모두 같은 아미노산인 경우), 워블과 이노신 덕분에 세포는 61가지 코돈을 훨씬 적은 수의 tRNA로 모두 읽을 수 있어요.'],
+     ['In some tRNAs, an enzyme turns the A at the anticodon\'s 5\' end (the wobble position) into inosine (I). Inosine is a modified base, A with its amino group removed; it does not occur in DNA or mRNA, only in tRNA.',
+      'Inosine can pair with U, C and A. So one tRNA carrying inosine reads three kinds of codon at once: those whose third base is U, C or A.',
+      'Many codons differ only in the third base and mean the same amino acid (sometimes all four do). Thanks to wobble and inosine, a cell reads all 61 codons with far fewer tRNAs.']),
+  '4-4': L(['유전 암호표의 64가지 코돈 중 UAA, UAG, UGA 세 개는 어떤 아미노산도 뜻하지 않는 정지 코돈이에요. 이 코돈들과 짝을 이루는 안티코돈을 가진 tRNA는 세포에 없어요.',
+      '정지 코돈이 A 자리에 오면, tRNA 대신 방출 인자라는 단백질(진핵생물은 eRF1)이 들어와요. 방출 인자는 tRNA와 비슷한 모양으로 A 자리에 맞아 들어가 정지 코돈을 알아봐요.',
+      '방출 인자가 들어오면 P 자리 tRNA에 붙어 있던 폴리펩타이드 사슬이 물과 반응해 떨어져 나와요(가수분해). 완성된 사슬이 풀려나고, 리보솜의 큰 소단위와 작은 소단위는 서로 분리되어 다음 번역에 다시 쓰여요.'],
+     ['Of the 64 codons, three, UAA, UAG and UGA, stand for no amino acid: they are stop codons. Cells have no tRNA whose anticodon pairs with them.',
+      'When a stop codon reaches the A site, a protein called a release factor (eRF1 in eukaryotes) comes in instead of a tRNA. It is shaped much like a tRNA, fits the A site and recognises the stop codon.',
+      'The release factor makes the chain on the P-site tRNA react with water (hydrolysis), so it comes off. The finished chain is freed, and the ribosome\'s large and small subunits separate, ready for the next round.']),
+  '5-1': L(['진핵세포에서 번역은 보통 이렇게 시작해요. 리보솜의 작은 소단위가 개시 tRNA(Met)와 개시 인자들을 데리고 mRNA의 5\' 캡에 먼저 붙어요. 그다음 mRNA를 따라 3\' 쪽으로 미끄러지며 염기를 하나씩 훑는데, 이것을 스캐닝이라고 해요.',
+      '작은 소단위는 개시 코돈 AUG를 만나면 멈출 수 있어요. 그런데 AUG라고 다 같은 것은 아니에요. AUG 주변 염기, 특히 AUG의 A를 +1로 셌을 때 −3 위치와 +4 위치가 멈출 확률을 크게 좌우해요. 이 주변 서열을 Kozak 문맥이라고 하고, 척추동물의 공통 서열은 gccRccAUGG예요(R = A 또는 G).',
+      '리보솜이 멈추면 큰 소단위가 합류하고, 그 AUG부터 읽기틀이 정해져 번역이 시작돼요. 그래서 캡에서 첫 AUG까지의 구간(5\' UTR)은 번역되지 않아요.'],
+     ['In eukaryotic cells, translation usually starts like this. The small ribosomal subunit, carrying the initiator tRNA (Met) and initiation factors, first binds the mRNA\'s 5\' cap. It then slides toward the 3\' end, checking base by base: scanning.',
+      'The small subunit can stop when it meets an AUG start codon, but not every AUG is equal. The bases around it decide how likely it is to stop, above all positions −3 and +4 (counting the A of AUG as +1). This surrounding sequence is the Kozak context; the vertebrate consensus is gccRccAUGG (R = A or G).',
+      'When it stops, the large subunit joins, the reading frame is set from that AUG and translation begins. The stretch from the cap to the start AUG (the 5\' UTR) is not translated.']),
+  '5-2': L(['스캐닝하는 리보솜은 처음 만나는 AUG에서 항상 멈추지는 않아요. 그 AUG의 Kozak 문맥이 좋지 않으면 대부분 그냥 지나쳐 다음 AUG로 계속 가요. 이를 새는 스캐닝(leaky scanning)이라고 해요.',
+      '문맥이 좋다는 것은 −3 위치에 퓨린(A 또는 G)이 있거나 +4 위치에 G가 있다는 뜻이에요. 둘 다 갖춘 AUG에서는 리보솜이 거의 확실하게 멈추고, 둘 다 없는 AUG는 자주 건너뛰어요.',
+      '새는 스캐닝 덕분에 mRNA 하나에서 시작점이 다른 단백질이 두 가지 이상 만들어지기도 해요. 세포는 이 방식으로 같은 유전자에서 길이가 다른 단백질을 만들거나 단백질 양을 조절해요.'],
+     ['A scanning ribosome does not always stop at the first AUG it meets. If that AUG\'s Kozak context is poor, it mostly slides past and carries on to the next AUG. This is leaky scanning.',
+      'A good context means a purine (A or G) at −3 or a G at +4. With both, the ribosome stops almost every time; with neither, it often skips the AUG.',
+      'Leaky scanning lets one mRNA make two or more proteins that start at different places. Cells use it to make proteins of different lengths from one gene, or to tune how much protein is made.']),
+  '5-3': L(['ORF(열린 읽기틀)는 개시 코돈 AUG에서 시작해 같은 읽기틀의 정지 코돈까지 이어지는 구간이에요. 단백질을 만드는 주된 ORF를 주 ORF라고 해요.',
+      'uORF(상류 ORF)는 5\' UTR, 즉 캡과 주 ORF의 AUG 사이에 자리한 짧은 ORF예요. 사람 mRNA의 약 절반이 uORF를 하나 이상 가지고 있어요.',
+      '캡에서 출발한 리보솜은 5\' 쪽부터 차례로 AUG를 만나요. 그래서 uORF의 AUG가 좋은 문맥이면 리보솜은 주 ORF보다 uORF를 먼저 번역하게 돼요. 세포는 uORF를 이용해 주 단백질의 양을 조절해요.'],
+     ['An ORF (open reading frame) runs from an AUG start codon to the next stop codon in the same frame. The ORF that makes the main protein is the main ORF.',
+      'A uORF (upstream ORF) is a short ORF in the 5\' UTR, between the cap and the main ORF\'s AUG. About half of human mRNAs have at least one.',
+      'A ribosome that starts at the cap meets AUGs in order from the 5\' end. So if a uORF\'s AUG has a good context, the ribosome translates the uORF before reaching the main ORF. Cells use uORFs to control how much of the main protein is made.']),
+  '5-4': L(['uORF가 주 단백질의 양을 줄일 수 있다면, uORF를 없애면 주 단백질이 늘어날 거예요. uORF를 없애는 가장 직접적인 방법은 uORF의 시작점인 AUG를 다른 서열로 바꾸는 거예요.',
+      'AUG의 세 염기 중 하나만 바뀌어도 더 이상 개시 코돈이 아니게 돼요. 그러면 스캐닝하던 리보솜은 그 자리를 그냥 지나쳐 다음 AUG를 찾아가요. 다만 바꾼 결과로 새 AUG가 생기거나 주 ORF의 서열이 달라지면 안 돼요.',
+      '실제로 uORF의 AUG를 만들거나 없애는 돌연변이가 질병을 일으킨 사례가 보고되어 있어요. 단백질 서열은 그대로인데 양만 바뀌어도 병이 될 수 있어요.'],
+     ['If a uORF can lower the amount of the main protein, removing it should raise it. The most direct way to remove a uORF is to change its start, the AUG, into something else.',
+      'Changing any one of the three bases makes it no longer a start codon, and the scanning ribosome slides past to the next AUG. But the change must not create a new AUG or alter the main ORF\'s sequence.',
+      'Mutations that create or destroy uORF AUGs have really been found behind human diseases: a protein can cause illness by its amount alone, even when its sequence is unchanged.']),
+  '6-1': L(['돌연변이는 DNA 염기 서열의 변화예요. 염기 하나가 다른 염기로 바뀌는 것을 치환이라 하고, 치환이 단백질에 주는 영향은 바뀐 코돈이 무엇이 되느냐에 따라 달라요.',
+      '바뀐 코돈이 여전히 같은 아미노산을 뜻하면 침묵 돌연변이, 다른 아미노산을 뜻하면 미스센스, 정지 코돈이 되면 넌센스 돌연변이예요. 미스센스는 다시 성질(크기, 전하, 친수성)이 비슷한 아미노산으로 바뀌면 보존적, 성질이 크게 다르면 비보존적이라고 나눠요.',
+      '헤모글로빈은 네 사슬이 모인 단백질이라, 겉면 아미노산 하나의 성질만 바뀌어도 분자들끼리 달라붙는 방식이 달라질 수 있어요. 정상과 환자의 서열에서 어느 코돈이 바뀌었는지, 그 코돈이 어떤 아미노산이 되는지 확인해 보세요.'],
+     ['A mutation is a change in the DNA base sequence. Swapping one base for another is a substitution, and its effect on the protein depends on what the changed codon becomes.',
+      'If the codon still means the same amino acid, it is silent; if it means a different one, missense; if it becomes a stop codon, nonsense. Missense is further split into conservative (an amino acid with similar size, charge and polarity) and non-conservative (very different properties).',
+      'Haemoglobin is built from four chains, so changing the character of a single surface amino acid can change how the molecules stick to each other. Find which codon differs between normal and patient, and what amino acid it becomes.']),
+  '6-2': L(['염기가 빠지거나(결실) 끼어드는(삽입) 돌연변이도 있어요. 이때 중요한 것은 몇 개가 빠지거나 들어갔느냐예요.',
+      '번역은 코돈 단위, 즉 3개씩 읽어요. 그래서 3의 배수만큼 바뀌면 그 뒤의 읽기틀은 그대로이고, 아미노산 몇 개만 빠지거나 더해져요. 이를 틀 유지(in-frame) 결실·삽입이라고 해요. 반면 3의 배수가 아니면 그 뒤의 코돈 구분이 모두 밀려요.',
+      'CFTR은 세포막에서 염화 이온을 통과시키는 통로 단백질이에요. 막단백질은 정확히 접혀야 세포막까지 운반되기 때문에, 아미노산이 조금만 달라져도 품질 관리 과정에서 걸러질 수 있어요. 정상과 환자의 서열 길이 차이부터 세어 보세요.'],
+     ['Some mutations remove bases (deletions) or add them (insertions). What matters most is how many.',
+      'Translation reads in codons, three bases at a time. If the change is a multiple of three, the reading frame after it is unchanged and only a few amino acids are lost or added: an in-frame deletion or insertion. If not, every codon boundary after it shifts.',
+      'CFTR is a channel protein that lets chloride ions through the cell membrane. Membrane proteins must fold exactly to be delivered to the membrane, so even a small change can get them caught by quality control. Start by counting the length difference between normal and patient.']),
+  '6-3': L(['돌연변이가 꼭 엑손(단백질 정보 부분)에 있어야 병이 되는 것은 아니에요. 인트론은 잘려 나가지만, 인트론 양 끝과 가지점 같은 스플라이싱 신호는 인트론이 제대로 잘리는 데 꼭 필요해요.',
+      '3장에서 본 것처럼, 인트론의 5\' 끝은 거의 언제나 GU로 시작하고 이 자리는 스플라이시오솜의 U1 snRNA와 염기쌍을 이뤄 인식돼요. 이 핵심 신호가 바뀌면 스플라이시오솜이 경계를 알아보지 못해요.',
+      '그러면 인트론이 그대로 남거나, 근처의 다른 GU를 대신 잘라 엉뚱한 mRNA가 만들어질 수 있어요. 이 레벨의 돌연변이가 어디에 있는지, 그 자리가 어떤 신호였는지 3장의 규칙과 비교해 보세요.'],
+     ['A mutation does not have to sit in an exon (the protein-coding part) to cause disease. Introns are cut out, but splicing signals such as the intron ends and the branch point are needed for them to be cut out correctly.',
+      'As in chapter 3, an intron\'s 5\' end almost always begins with GU, and that site is recognised by base-pairing with the spliceosome\'s U1 snRNA. If this key signal changes, the spliceosome cannot find the boundary.',
+      'Then the intron may stay in, or a nearby GU may be cut instead, giving a wrong mRNA. Look at where this level\'s mutation is and which signal sat there, and compare with the rules from chapter 3.']),
+  '6-4': L(['3의 배수가 아닌 수의 염기가 빠지거나 끼어들면, 그 지점부터 뒤쪽 코돈의 구분이 모두 한두 칸씩 밀려요. 이를 틀이동(frameshift) 돌연변이라고 해요.',
+      '틀이 밀리면 돌연변이 지점부터 전혀 다른 아미노산들이 이어지고, 대개 얼마 지나지 않아 밀린 틀 안에서 정지 코돈을 만나 단백질이 짧게 끝나요. 이렇게 일찍 나타난 정지 코돈이 있는 mRNA는 세포가 따로 골라 분해하기도 해요(넌센스 매개 mRNA 분해).',
+      'BRCA1은 끊어진 DNA 이중 가닥을 정확하게 이어 붙이는 상동 재조합 수선에 필요한 단백질이에요. 이 단백질이 없으면 DNA 손상이 쌓여 암 위험이 높아져요. 빠진 염기를 다시 넣으면 원래 틀을 되찾을 수 있을지 생각해 보세요.'],
+     ['If a number of bases that is not a multiple of three is lost or inserted, every codon boundary after that point shifts by one or two. This is a frameshift mutation.',
+      'After the shift, completely different amino acids follow, and usually a stop codon in the new frame soon ends the protein early. Cells often single out and destroy mRNAs with such early stop codons (nonsense-mediated decay).',
+      'BRCA1 is needed for homologous recombination, the accurate repair of broken double-stranded DNA. Without it, DNA damage builds up and cancer risk rises. Think about whether putting the missing bases back would restore the original frame.']),
+};
+
 const LEVEL_BY_ID = Object.fromEntries(LEVELS.map(l => [l.id, l]));
 
 // ---- Step logic shared by the game and the tests ----
@@ -1180,6 +1340,7 @@ const I18N = {
     fDNA: 'DNA', fPre: 'pre-mRNA', fMRNA: 'mRNA', fProt: '단백질', fTx: '전사', fProc: '가공', fTl: '번역', flowAria: '유전자 발현 단계',
     foldT: 'Protein Origami에서 접어 보기', foldD: '이 사슬({n}개)을 소수성(H)·친수성(P) 구슬로 바꿔 접기 게임에서 열어요.', foldGo: '접으러 가기',
     combo: '연속 {n}', comboBonus: '연속 {n}! +2초',
+    explainT: '개념 설명', explainTip: '대학 과정 개념을 레벨마다 자세히 풀어 줘요. 고등학생에게 추천해요.', explainBox: '이 레벨의 개념',
     tests: '테스트',
   },
   en: {
@@ -1234,6 +1395,7 @@ const I18N = {
     fDNA: 'DNA', fPre: 'pre-mRNA', fMRNA: 'mRNA', fProt: 'Protein', fTx: 'transcribe', fProc: 'process', fTl: 'translate', flowAria: 'Gene-expression stages',
     foldT: 'Fold it in Protein Origami', foldD: 'Opens this chain ({n} residues) in the folding game as hydrophobic (H) and polar (P) beads.', foldGo: 'Fold it',
     combo: '{n} in a row', comboBonus: '{n} in a row! +2 s',
+    explainT: 'Concept notes', explainTip: 'Explains the university-level ideas in each level in detail. Recommended for high-school students.', explainBox: 'The idea behind this level',
     tests: 'Tests',
   },
 };
@@ -1280,7 +1442,7 @@ const save = () => store('set', serialize(S));
 const TESTING = new URLSearchParams(location.search).has('test');
 let lang = S.lang;
 // glue punctuation to its neighbours (U+2060 word joiner) so lines never break inside "c.58–66" or "반대(역평행)"
-const glue = str => typeof str === 'string' ? str.replace(/(?<=[^\s\u2060])([(–·=])/g, '\u2060$1').replace(/([-–·/=])(?=[^\s\u2060])/g, '$1\u2060').replace(/([)%])(?=[가-힣A-Za-z])/g, '$1\u2060') : str;
+const glue = str => typeof str === 'string' ? str.replace(/(?<=[^\s\u2060])([(–·=→])/g, '\u2060$1').replace(/([-–·/=→])(?=[^\s\u2060])/g, '$1\u2060').replace(/([)%])(?=[가-힣A-Za-z])/g, '$1\u2060') : str;
 const glueText = n => { const v = glue(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; };
 function glueTree(el) { if (el.nodeType === 3) return glueText(el); if (el.nodeType !== 1 || el.matches('textarea, script, style')) return; const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) glueText(n); }
 new MutationObserver(ms => { if (FAST) return; for (const m of ms) m.type === 'characterData' ? glueText(m.target) : m.addedNodes.forEach(glueTree); })
@@ -1403,7 +1565,8 @@ function viewHome() {
   const nCodex = Object.keys(PROTEINS).filter(k => S.codex.includes(k)).length, next = nextLevel();
   if (HX.sel === null) HX.sel = next ? next.ch : 1;
   $('view').innerHTML = `<section class="hero"><div style="flex:1 1 360px;min-width:0"><h1>Codon Forge</h1><p>${t('tag')}</p>
-      <div class="meta"><span class="chip">★ <b>${totalStars()}</b>/${LEVELS.length * 3}</span><span class="chip">${t('codex')} <b>${nCodex}</b>/${Object.keys(PROTEINS).length}</span></div></div>
+      <div class="meta"><span class="chip">★ <b>${totalStars()}</b>/${LEVELS.length * 3}</span><span class="chip">${t('codex')} <b>${nCodex}</b>/${Object.keys(PROTEINS).length}</span>${exSwitch('exHome')}</div>
+      <p class="note" id="exNote" ${S.explain ? '' : 'hidden'} style="margin:8px 2px 0">${t('explainTip')}</p></div>
       <div class="heroGo">${next ? `<button class="cta" id="goNext">${icon('play', 16)} ${S.stars['1-1'] ? t('continue') : t('start')} <small>${next.id} · ${tx(next.title)}</small></button>` : ''}
       <button class="linkBtn" id="introBtn">${t('introLink')}</button></div></section>
     <div class="dna" id="dna"><canvas id="hx" aria-label="${t('dnaAria')}"></canvas><div class="chs">${CHAPTERS.map(c => {
@@ -1423,6 +1586,7 @@ function viewHome() {
   $('view').querySelectorAll('[data-ch]').forEach(b => b.onclick = () => selectChapter(+b.dataset.ch));
   if ($('goNext')) $('goNext').onclick = () => go('#level/' + next.id);
   $('introBtn').onclick = showIntro;
+  bindExplain();
   $('glossBtn').onclick = showGloss;
   renderChapter(HX.sel);
   helixInit();
@@ -1586,6 +1750,17 @@ function logoSVG(s) {
     <path d="M32 31 V22" stroke="#2a2830" stroke-width="3"/><circle cx="32" cy="14" r="9" fill="#f6c08d" stroke="#2a2830" stroke-width="2"/><circle cx="15" cy="14" r="5.5" fill="#9bd8cd"/><circle cx="49" cy="14" r="5.5" fill="#b5c0f2"/></svg>`;
 }
 
+// ---- concept notes toggle (home + every level) ----
+const exSwitch = id => `<button class="chip sw ${S.explain ? 'on' : ''}" id="${id}" role="switch" aria-checked="${S.explain}" title="${esc(t('explainTip'))}">${t('explainT')}<i aria-hidden="true"></i></button>`;
+const exBoxHTML = lv => S.explain && EXPLAIN[lv.id] ? `<div class="explain"><b>${t('explainBox')}</b>${tx(EXPLAIN[lv.id]).map(x => `<p>${x}</p>`).join('')}</div>` : '';
+function setExplain(on) {
+  S.explain = on; save();
+  document.querySelectorAll('.chip.sw').forEach(b => { b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+  if ($('exBox') && G) $('exBox').innerHTML = exBoxHTML(G.lv);
+  if ($('exNote')) $('exNote').hidden = !on;
+}
+function bindExplain() { document.querySelectorAll('.chip.sw').forEach(b => b.onclick = () => { sfx('tick'); setExplain(!S.explain); }); }
+
 // ---- level flow strip: where this level sits in DNA → pre-mRNA → mRNA → protein ----
 const FLOW_AT = {'1-1': [[0], []], '1-2': [[0], []], '1-3': [[1], [0]], '1-4': [[0, 1, 2, 3], []], 2: [[1], [0]], 3: [[2], [1]], 4: [[3], [2]], 5: [[3], [2]], 6: [[0, 3], []]};
 function flowHTML(lv) {
@@ -1663,8 +1838,9 @@ function startLevel(id) {
   bindBar();
   $('hintBtn').onclick = useHint;
   $('view').innerHTML = `${flowHTML(lv)}<section class="panel brief"><div class="goal">${tx(lv.goal)}</div><div class="learn">${tx(lv.learn)}</div>
-      ${lv.src ? `<div class="src">${tx(lv.src)}</div>` : ''}${lv.steps.length > 1 ? `<div class="dots">${lv.steps.map(() => '<i></i>').join('')}</div>` : ''}</section>
+      ${lv.src ? `<div class="src">${tx(lv.src)}</div>` : ''}<div class="briefFoot">${lv.steps.length > 1 ? `<div class="dots">${lv.steps.map(() => '<i></i>').join('')}</div>` : '<span></span>'}${exSwitch('exLevel')}</div><div id="exBox">${exBoxHTML(lv)}</div></section>
     <section class="panel stage" id="stage"></section><section class="panel dock" id="dock"></section><div class="fb" id="fb"></div>`;
+  bindExplain();
   window.scrollTo(0, 0);
   runStep();
 }
@@ -2676,6 +2852,24 @@ function runTests() {
     startLevel('4-1'); flush(); const first = document.querySelector('#tray .tcard .init') && document.querySelector('#tray .tcard').contains(document.querySelector('#tray .init'));
     startLevel('1-3'); flush(); STEP.build.input(G.lv.steps[0], 'T'); const m = G.mistakes;
     G = null; return cur === '3' && first && m === 0 || [cur, first, m].join();
+  });
+  T_('41 concept notes: every level has 2–4 paragraphs in both languages and never states a correct choice', () => {
+    const bad = [], strip = x => String(x).replace(/\u2060/g, '');
+    for (const lv of LEVELS) {
+      const e = EXPLAIN[lv.id]; if (!e) { bad.push(lv.id + ' missing'); continue; }
+      for (const lg of ['ko', 'en']) if (!Array.isArray(e[lg]) || e[lg].length < 2 || e[lg].length > 4 || e[lg].some(p => p.length < 40)) bad.push(lv.id + ' ' + lg + ' short');
+      for (const st of lv.steps) if (st.t === 'choice') { const a = st.opts[st.ans]; for (const lg of ['ko', 'en']) { const ans = strip(a[lg] ?? a); if (e[lg].join(' ').includes(ans)) bad.push(lv.id + ' leaks ' + ans); } }
+    }
+    return !bad.length || bad.join(', ');
+  });
+  T_('42 concept notes toggle: off by default, saved, shows the box only when on', () => {
+    S = SAVE_DEFAULT(); const def = S.explain === false;
+    startLevel('2-2'); flush(); const off = !document.querySelector('.explain');
+    $('exLevel').click(); const on = !!document.querySelector('#exBox .explain') && $('exLevel').getAttribute('aria-checked') === 'true';
+    const kept = deserialize(serialize(S)).explain === true && deserialize('{"v":1}').explain === false;
+    viewHome(); const home = $('exHome').classList.contains('on') && !$('exNote').hidden;
+    $('exHome').click(); const offAgain = S.explain === false;
+    G = null; return def && off && on && kept && home && offAgain || [def, off, on, kept, home, offAgain].join();
   });
   FAST = false; lang = wasLang; S = deserialize(backup); save(); G = null;
   location.hash = '#home'; route();

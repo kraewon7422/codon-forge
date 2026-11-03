@@ -38,6 +38,9 @@ Open `codon-forge.html` in any modern browser (desktop or phone). Progress is sa
 - **Sandbox:** paste any DNA or FASTA. All six reading frames are translated and ORFs are drawn as bars.
 - **Time attack:** 60 seconds of "which tRNA reads this codon?", including wobble and inosine. Every 5 in a row adds 2 seconds.
 - **Keys:** letters type bases · `1`–`9` pick an option or tRNA · `Space` translocates · `H` hint · `Esc` back.
+- **Concept notes** (switch on the home page or in any level): a few paragraphs per level explaining what you are
+  looking for and why a cell needs it, written for high-school students meeting university-level ideas. They explain
+  the idea, never the answer. Off by default.
 - Korean and English (`KO · EN` button).
 
 ## The rules in the game
@@ -82,7 +85,7 @@ B chain, or otherwise residues 1–40.
 
 ## Tests
 
-Open `codon-forge.html?test=1`. 39 tests run in the page, including:
+Open `codon-forge.html?test=1`. 42 tests run in the page, including:
 
 - genetic code (64 codons, 61 sense, codon counts per amino acid), wobble table, reverse complement
 - real sequences translate to their NCBI proteins; HBB intron 1 is found at exactly 130 nt with its branch point 37 nt from the 3′ end
@@ -128,6 +131,8 @@ HTML 파일 하나로 돼 있고, 빌드나 라이브러리가 없어요.
 - **샌드박스:** DNA나 FASTA를 붙여넣으면 6개 읽기틀을 모두 번역해 ORF를 막대로 보여줘요.
 - **타임 어택:** 60초 동안 "이 코돈을 읽는 tRNA는?" (워블·이노신 포함). 5개 연속 정답마다 +2초
 - **키:** 글자 = 염기 입력 · `1`–`9` 선택 · `Space` 전위 · `H` 힌트 · `Esc` 뒤로
+- **개념 설명** (첫 화면이나 레벨 안의 스위치): 레벨마다 지금 찾는 것이 무엇이고 세포에서 왜 중요한지 몇 문단으로
+  자세히 풀어 줘요. 대학 과정 개념을 처음 보는 고등학생을 위한 기능이고, 정답은 알려주지 않아요. 기본은 꺼짐이에요.
 - 한국어 / 영어 (`KO · EN` 버튼)
 
 ## 서열과 정확성
@@ -139,7 +144,7 @@ HTML 파일 하나로 돼 있고, 빌드나 라이브러리가 없어요.
 
 ## 테스트
 
-`codon-forge.html?test=1`을 열면 39개 테스트가 페이지 안에서 돌아요. 24개 레벨을 두 언어로 모두 별 3개로
+`codon-forge.html?test=1`을 열면 42개 테스트가 페이지 안에서 돌아요. 24개 레벨을 두 언어로 모두 별 3개로
 깨는 UI 자동 플레이도 포함돼 있어요.
 
 ## 라이선스
